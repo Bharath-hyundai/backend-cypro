@@ -16,7 +16,7 @@ const API_KEY = process.env.VEHICLE_API_KEY;
 app.get("/api/makes", async (req, res) => {
   try {
     const response = await axios.get(
-      "https://test.com/vehicle-information-service/vehicle_details/make_detailsApi",
+      "https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_detailsApi",
       {
         headers: { "API-KEY": API_KEY },
       }
@@ -36,7 +36,7 @@ app.post("/api/models", async (req, res) => {
     const { makeId } = req.body;
 
     const response = await axios.post(
-      "https://test.com/vehicle-information-service/vehicle_details/make_modelsApi",
+      "https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_modelsApi",
       { requestId: [makeId] },
       {
         headers: { "API-KEY": API_KEY },
@@ -55,7 +55,7 @@ app.post("/api/models", async (req, res) => {
 app.post("/api/create-lead", async (req, res) => {
   try {
     const response = await axios.post(
-      "https://test.com/sales/lead/broadCast-leads",
+      "https://mock-api.cyepro.com/sales/lead/broadCast-leads",
       req.body,
       {
         headers: {
