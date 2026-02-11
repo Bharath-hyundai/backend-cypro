@@ -61,7 +61,7 @@ app.post("/api/create-lead", async (req, res) => {
       req.body,
       {
         headers: {
-          "API-KEY": API_KEY,
+          "API-KEY": process.env.VEHICLE_API_KEY,
           "Content-Type": "application/json",
         },
       }

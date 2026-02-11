@@ -1,0 +1,127 @@
+# API Documentation: Lead Initialization
+---
+
+## 1. Generate API Key
+
+**Step 1:**  
+ Copy this generated API-KEY and use below api calls  
+ `API-KEY`:  key i have
+
+
+## 2. Fetch Vehicle Make Details
+
+The **Make Details API** returns available vehicle manufacturers.
+
+**Endpoint:**  
+`GET https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_detailsApi`
+
+**Headers:**  
+`API-KEY`: Your generated API key  
+
+**Sample cURL Request:**  
+```bash
+curl 'https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_detailsApi' \
+  -H 'API-KEY: <api_key>'
+
+Sample Response:
+[
+  { "makeId": 393, "makeName": "Hyundai" },
+  { "makeId": 101, "makeName": "Maruti Suzuki" }
+]
+
+3. Fetch Vehicle Model Details
+
+Once you have the makeId, call the Make Models API to get all models for that manufacturer.
+
+Endpoint:
+POST https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_modelsApi
+
+Headers:
+API-KEY: Your generated API key
+
+
+Sample cURL Request:
+
+
+curl 'https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_modelsApi' \
+  -H 'API-KEY: <api_key>' \
+  --data-raw '{ "requestId": [393]}'
+here requestId is what ever the user selects that makeId is the input here
+
+Sample Response:
+[
+  { "modelId": 3628, "modelName": "Grand i10 NIOS" },
+  { "modelId": 3630, "modelName": "Venue" }
+]
+
+4. Lead Initialization API
+
+After fetching makeId, makeName, modelId, and modelName, use them to create a new sales lead.
+
+Endpoint:
+POST https://mock-api.cyepro.com/sales/lead/broadCast-leads
+
+Headers:
+API-KEY: Your generated API key
+Content-Type: application/json
+
+Sample cURL Request:
+
+curl --location 'https://mock-api.cyepro.com/sales/lead/broadCast-leads' \
+--header 'API-KEY: hfhfftft' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "firstName": "new",
+  "lastName": "one", // non mandatory
+  "mobileNumber": "9876503210",
+  "alternativeMobileNumber": "9123436780", // non mandatory
+  "makeName": "Hyundai",
+  "makeId": 393,
+  "modelId": 3628,
+  "modelName": "Grand i10 NIOS",
+  "emailId": "harish.kumar@example.com", // non mandatory
+   "city": "Gachibowli",// non mandatory
+    "pincode": 500032 // non mandatory
+}'
+
+Request Body Parameters
+
+Mandatory Fields
+| Field Name     | Type    | Description                         |
+| -------------- | ------- | ----------------------------------- |
+| `firstName`    | String  | Lead’s first name                   |
+| `lastName`     | String  | Lead’s last name                    |
+| `mobileNumber` | String  | Primary contact number              |
+| `makeName`     | String  | Vehicle make name (from Make API)   |
+| `makeId`       | Integer | Vehicle make ID (from Make API)     |
+| `modelId`      | Integer | Vehicle model ID (from Model API)   |
+| `modelName`    | String  | Vehicle model name (from Model API) |
+
+
+Optional Fields
+| Field Name                | Type   | Description              |
+| ------------------------- | ------ | ------------------------ |
+| `alternativeMobileNumber` | String | Secondary contact number |
+| `emailId`                 | String | Customer email ID        |
+
+
+5. Error Handling
+
+| Code | Message       | Description                            |
+| ---- | ------------- | -------------------------------------- |
+| 400  | Bad Request   | Missing required field or invalid data |
+| 401  | Unauthorized  | Invalid or missing API key             |
+| 403  | Forbidden     | Access denied for API key              |
+| 429  | Too Many Req. | Rate limit exceeded                    |
+| 500  | Server Error  | Internal server issue                  |
+
+6. Security Guidelines
+
+Always use HTTPS in production.
+
+Keep API Key confidential.
+
+Rotate keys periodically.
+
+Revoke compromised keys immediately.
+
