@@ -54,6 +54,8 @@ app.post("/api/models", async (req, res) => {
 -------------------------------- */
 app.post("/api/create-lead", async (req, res) => {
   try {
+    console.log("Incoming Lead:", req.body);
+
     const response = await axios.post(
       "https://mock-api.cyepro.com/sales/lead/broadCast-leads",
       req.body,
@@ -65,17 +67,26 @@ app.post("/api/create-lead", async (req, res) => {
       }
     );
 
+    console.log("Vehicle API Success:", response.data);
+
     res.json({
       success: true,
       data: response.data,
     });
+
   } catch (error) {
+    console.error(
+      "Vehicle API ERROR:",
+      error.response?.data || error.message
+    );
+
     res.status(500).json({
       success: false,
       error: error.response?.data || error.message,
     });
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
