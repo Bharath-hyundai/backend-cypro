@@ -1,28 +1,29 @@
-const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
-require("dotenv").config();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const PORT = process.env.PORT || 5000;
-const API_KEY = process.env.VEHICLE_API_KEY;
-
-console.log("Loaded API KEY:", API_KEY ? "Present ✅" : "Missing ❌");
-
-/* -------------------------------
-   CREATE LEAD API
--------------------------------- */
 app.post("/api/create-lead", async (req, res) => {
   try {
-    console.log("Incoming Lead from Frontend:", req.body);
+    console.log("Incoming Lead:", req.body);
 
-    // Validate required fields
-    const { name, mobile, email, city, model } = req.body;
+    const {
+      firstName,
+      lastName,
+      mobileNumber,
+      makeName,
+      makeId,
+      modelId,
+      modelName,
+      emailId,
+      city,
+      pincode
+    } = req.body;
 
-    if (!name || !mobile || !city || !model) {
+    // Validate mandatory fields
+    if (
+      !firstName ||
+      !mobileNumber ||
+      !makeName ||
+      !makeId ||
+      !modelId ||
+      !modelName
+    ) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
@@ -30,12 +31,16 @@ app.post("/api/create-lead", async (req, res) => {
     }
 
     const vehiclePayload = {
-      name,
-      mobile,
-      email: email || "",
-      city,
-      model,
-      source: "Website",
+      firstName,
+      lastName: lastName || "",
+      mobileNumber,
+      makeName,
+      makeId,
+      modelId,
+      modelName,
+      emailId: emailId || "",
+      city: city || "",
+      pincode: pincode || ""
     };
 
     console.log("Sending to Vehicle API:", vehiclePayload);
@@ -51,24 +56,17 @@ app.post("/api/create-lead", async (req, res) => {
       }
     );
 
-    console.log("Vehicle API Success:", response.data);
-
     res.json({
       success: true,
       data: response.data,
     });
 
   } catch (error) {
-    console.error("STATUS:", error.response?.status);
-    console.error("DATA:", error.response?.data);
+    console.error("Vehicle API ERROR:", error.response?.data || error.message);
 
     res.status(500).json({
       success: false,
       error: error.response?.data || error.message,
     });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
