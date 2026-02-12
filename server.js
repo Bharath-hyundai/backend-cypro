@@ -10,58 +10,42 @@ app.use(express.json());
 const PORT = process.env.PORT || 5000;
 const API_KEY = process.env.VEHICLE_API_KEY;
 
-/* -------------------------------
-   1️⃣ Fetch Vehicle Makes
--------------------------------- */
-app.get("/api/makes", async (req, res) => {
-  try {
-    const response = await axios.get(
-      "https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_detailsApi",
-      {
-        headers: { "API-KEY": API_KEY },
-      }
-    );
-
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+console.log("Loaded API KEY:", API_KEY ? "Present ✅" : "Missing ❌");
 
 /* -------------------------------
-   2️⃣ Fetch Vehicle Models
--------------------------------- */
-app.post("/api/models", async (req, res) => {
-  try {
-    const { makeId } = req.body;
-
-    const response = await axios.post(
-      "https://mock-api.cyepro.com/vehicle-information-service/vehicle_details/make_modelsApi",
-      { requestId: [makeId] },
-      {
-        headers: { "API-KEY": API_KEY },
-      }
-    );
-
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/* -------------------------------
-   3️⃣ Create Lead
+   CREATE LEAD API
 -------------------------------- */
 app.post("/api/create-lead", async (req, res) => {
   try {
-    console.log("Incoming Lead:", req.body);
+    console.log("Incoming Lead from Frontend:", req.body);
+
+    // Validate required fields
+    const { name, mobile, email, city, model } = req.body;
+
+    if (!name || !mobile || !city || !model) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const vehiclePayload = {
+      name,
+      mobile,
+      email: email || "",
+      city,
+      model,
+      source: "Website",
+    };
+
+    console.log("Sending to Vehicle API:", vehiclePayload);
 
     const response = await axios.post(
       "https://mock-api.cyepro.com/sales/lead/broadCast-leads",
-      req.body,
+      vehiclePayload,
       {
         headers: {
-          "API-KEY": process.env.VEHICLE_API_KEY,
+          "API-KEY": API_KEY,
           "Content-Type": "application/json",
         },
       }
@@ -75,10 +59,8 @@ app.post("/api/create-lead", async (req, res) => {
     });
 
   } catch (error) {
-    console.error(
-      "Vehicle API ERROR:",
-      error.response?.data || error.message
-    );
+    console.error("STATUS:", error.response?.status);
+    console.error("DATA:", error.response?.data);
 
     res.status(500).json({
       success: false,
@@ -86,7 +68,6 @@ app.post("/api/create-lead", async (req, res) => {
     });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
