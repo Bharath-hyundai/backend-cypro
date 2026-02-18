@@ -71,7 +71,7 @@ app.post("/api/create-lead", async (req, res) => {
     console.time("⏱ Cyepro API Time");
 
     const response = await axios.post(
-      "https://mock-api.cyepro.com/sales/lead/broadCast-leads",
+      "https://salesapp-api.cyepro.com/sales/lead/broadCast-leads",
       vehiclePayload,
       {
         headers: {
