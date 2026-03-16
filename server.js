@@ -16,9 +16,10 @@ const API_KEY = process.env.VEHICLE_API_KEY;
    MONGODB CONNECTION
 ============================= */
 
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("✅ MongoDB Connected"))
-.catch(err => console.log("❌ MongoDB Error:", err));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.log("❌ MongoDB Error:", err));
 
 /* =============================
    LEAD SCHEMA
@@ -27,11 +28,14 @@ mongoose.connect(process.env.MONGO_URI)
 const leadSchema = new mongoose.Schema({
   name: String,
   mobile: String,
+  makeName: String,
+  makeId: Number,
   model: String,
+  modelId: Number,
   city: String,
   status: String,
   error: String,
-  time: Date
+  time: Date,
 });
 
 const Lead = mongoose.model("Lead", leadSchema);
@@ -52,10 +56,8 @@ console.log("✅ Server Starting");
 ============================= */
 
 async function sendToCypro(payload, retries = 3) {
-
   try {
-
-    console.log(`🚀 Attempt ${4 - retries}/4 sending to Cypro`);
+    console.log(`🚀 Sending Lead to Cypro: ${payload.mobileNumber}`);
 
     const response = await axios.post(
       "https://salesapp-api.cyepro.com/sales/lead/broadCast-leads",
@@ -63,27 +65,27 @@ async function sendToCypro(payload, retries = 3) {
       {
         headers: {
           "API-KEY": API_KEY,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        timeout: 30000
+        timeout: 30000,
       }
     );
 
-    console.log("✅ Cypro Lead Success:", payload.mobileNumber);
+    console.log("✅ Cypro Success:", payload.mobileNumber);
 
     return response;
-
   } catch (error) {
-
-    console.error("❌ Cypro attempt failed");
+    console.error(
+      "❌ Cypro Error:",
+      error.response?.data || error.message
+    );
 
     if (retries > 0) {
-
       const delay = (4 - retries) * 2000;
 
-      console.log(`⚠️ Retrying in ${delay/1000}s`);
+      console.log(`⚠️ Retrying in ${delay / 1000}s`);
 
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise((r) => setTimeout(r, delay));
 
       return sendToCypro(payload, retries - 1);
     }
@@ -97,7 +99,6 @@ async function sendToCypro(payload, retries = 3) {
 ============================= */
 
 app.post("/api/create-lead", async (req, res) => {
-
   const {
     firstName,
     lastName,
@@ -108,26 +109,34 @@ app.post("/api/create-lead", async (req, res) => {
     modelName,
     emailId,
     city,
-    pincode
+    pincode,
   } = req.body;
 
   try {
-
-    if (!firstName || !mobileNumber || !makeName || !makeId || !modelId || !modelName) {
-
+    if (
+      !firstName ||
+      !mobileNumber ||
+      !makeName ||
+      !makeId ||
+      !modelId ||
+      !modelName
+    ) {
       await Lead.create({
         name: firstName,
         mobile: mobileNumber,
+        makeName,
+        makeId,
         model: modelName,
+        modelId,
         city,
         status: "FAILED",
         error: "Missing required fields",
-        time: new Date()
+        time: new Date(),
       });
 
       return res.status(400).json({
         success: false,
-        message: "Missing required fields"
+        message: "Missing required fields",
       });
     }
 
@@ -141,7 +150,8 @@ app.post("/api/create-lead", async (req, res) => {
       modelName,
       emailId: emailId || "",
       city: city || "",
-      pincode: pincode || ""
+      pincode: pincode || "",
+      source: "Website",
     };
 
     const response = await sendToCypro(vehiclePayload);
@@ -149,33 +159,37 @@ app.post("/api/create-lead", async (req, res) => {
     await Lead.create({
       name: firstName,
       mobile: mobileNumber,
+      makeName,
+      makeId,
       model: modelName,
+      modelId,
       city,
       status: "SUCCESS",
-      time: new Date()
+      time: new Date(),
     });
 
     res.json({
       success: true,
       message: "Lead submitted",
-      data: response.data
+      data: response.data,
     });
-
   } catch (error) {
-
     await Lead.create({
       name: firstName,
       mobile: mobileNumber,
+      makeName,
+      makeId,
       model: modelName,
+      modelId,
       city,
       status: "FAILED",
       error: error.message,
-      time: new Date()
+      time: new Date(),
     });
 
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -185,7 +199,6 @@ app.post("/api/create-lead", async (req, res) => {
 ============================= */
 
 app.get("/api/lead-report", async (req, res) => {
-
   const total = await Lead.countDocuments();
   const success = await Lead.countDocuments({ status: "SUCCESS" });
   const failed = await Lead.countDocuments({ status: "FAILED" });
@@ -196,7 +209,7 @@ app.get("/api/lead-report", async (req, res) => {
     total,
     success,
     failed,
-    leads
+    leads,
   });
 });
 
@@ -205,12 +218,11 @@ app.get("/api/lead-report", async (req, res) => {
 ============================= */
 
 app.get("/api/failed-leads", async (req, res) => {
-
   const leads = await Lead.find({ status: "FAILED" });
 
   res.json({
     total: leads.length,
-    leads
+    leads,
   });
 });
 
@@ -219,23 +231,23 @@ app.get("/api/failed-leads", async (req, res) => {
 ============================= */
 
 app.post("/api/retry-failed", async (req, res) => {
-
   const failedLeads = await Lead.find({ status: "FAILED" });
 
   let success = 0;
   let failed = 0;
 
   for (const lead of failedLeads) {
-
     const payload = {
       firstName: lead.name,
       mobileNumber: lead.mobile,
+      makeName: lead.makeName,
+      makeId: lead.makeId,
       modelName: lead.model,
-      city: lead.city
+      modelId: lead.modelId,
+      city: lead.city,
     };
 
     try {
-
       await sendToCypro(payload);
 
       lead.status = "SUCCESS";
@@ -243,9 +255,7 @@ app.post("/api/retry-failed", async (req, res) => {
       await lead.save();
 
       success++;
-
     } catch (error) {
-
       lead.error = error.message;
       await lead.save();
 
@@ -256,7 +266,7 @@ app.post("/api/retry-failed", async (req, res) => {
   res.json({
     retried: failedLeads.length,
     success,
-    failed
+    failed,
   });
 });
 
@@ -265,7 +275,6 @@ app.post("/api/retry-failed", async (req, res) => {
 ============================= */
 
 app.get("/api/export-leads", async (req, res) => {
-
   const leads = await Lead.find();
 
   const workbook = new ExcelJS.Workbook();
@@ -274,14 +283,15 @@ app.get("/api/export-leads", async (req, res) => {
   sheet.columns = [
     { header: "Name", key: "name", width: 20 },
     { header: "Mobile", key: "mobile", width: 15 },
+    { header: "Make", key: "makeName", width: 20 },
     { header: "Model", key: "model", width: 20 },
     { header: "City", key: "city", width: 20 },
     { header: "Status", key: "status", width: 10 },
     { header: "Error", key: "error", width: 30 },
-    { header: "Time", key: "time", width: 25 }
+    { header: "Time", key: "time", width: 25 },
   ];
 
-  leads.forEach(lead => sheet.addRow(lead));
+  leads.forEach((lead) => sheet.addRow(lead));
 
   res.setHeader(
     "Content-Type",
